@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using ConsoleAppWithAddressDatabase.Builders;
 using ConsoleAppWithAddressDatabase.Entities;
+using ConsoleAppWithAddressDatabase.Extensions;
 using Microsoft.Data.Sqlite;
 
 namespace ConsoleAppWithAddressDatabase.Repositories;
@@ -12,7 +14,7 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
 
     public void Add(Individual data)
     {
-        if (data.Name.IsEmpty()) throw new Exception("Лицо имеет незаполненное имя");
+        if (data.Name.IsEmptyOrNull()) throw new Exception("Лицо имеет незаполненное имя");
 
         var command = new SqliteCommand();
         command.Connection = Connection;
@@ -29,33 +31,39 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         Connection.Close();
     }
 
-    public Individual? GetById(int id)
+    public List<Individual> GetByCriteria<TV>(TV value, string columnName)
     {
+        var individuals = new List<Individual>();
         var command = new SqliteCommand();
         command.Connection = Connection;
         command.CommandText =
             $"""
              SELECT *
              FROM table_individuals
-             WHERE ({id} == Id)
+             WHERE '{value}' == (CAST ({columnName} AS TEXT))
              """;
 
         Connection.Open();
 
         var data = command.ExecuteReader();
 
-        if (!data.HasRows) throw new Exception("Лицо не найдено");
+        if (!data.HasRows) return individuals;
 
-        data.Read();
-        
-        var individual = new Individual(
-            data.GetInt32("Id"),
-            data.GetString("Name"),
-            data.GetInt32("TypeId"));
+        while (data.Read())
+        {
+            var individualBuilder = new IndividualBuilder();
+
+            individualBuilder.SetId(data.GetInt32("Id"))
+                .SetName(data.GetString("Name"))
+                .SetTypeId(data.GetInt32("TypeId"));
+            
+            individuals.Add(individualBuilder.Individual);
+            individualBuilder.Reset();
+        }
 
         Connection.Close();
 
-        return individual;
+        return individuals;
     }
 
     public List<Individual> GetAll()
@@ -75,18 +83,16 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
 
         if (!data.HasRows) return individuals;
 
-        var idIndex = data.GetOrdinal("Id");
-        var nameIndex = data.GetOrdinal("Name");
-        var typeIdIndex = data.GetOrdinal("TypeId");
-        
         while (data.Read())
         {
-            var individual = new Individual(
-                data.GetInt32(idIndex),
-                data.GetString(nameIndex),
-                data.GetInt32(typeIdIndex));
+            var individualBuilder = new IndividualBuilder();
 
-            individuals.Add(individual);
+            individualBuilder.SetId(data.GetInt32("Id"))
+                .SetName(data.GetString("Name"))
+                .SetTypeId(data.GetInt32("TypeId"));
+            
+            individuals.Add(individualBuilder.Individual);
+            individualBuilder.Reset();
         }
 
         Connection.Close();
@@ -96,10 +102,10 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
 
     public void Update(int id, Individual newData)
     {
-        var existingIndividual = GetById(id);
+        var existingIndividual = GetByCriteria(id, "Id");
 
-        var checkedName = newData.Name.IsEmpty() ? existingIndividual.Name : newData.Name;
-        var checkedTypeId = newData.TypeId is 1 or 2 ? existingIndividual.TypeId : newData.TypeId;
+        var checkedName = newData.Name.IsEmptyOrNull() ? existingIndividual[0].Name : newData.Name;
+        var checkedTypeId = newData.TypeId is 1 or 2 ? newData.TypeId : existingIndividual[0].TypeId;
 
         var command = new SqliteCommand();
         command.Connection = Connection;
@@ -107,7 +113,7 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
             $"""
              UPDATE table_individuals
              SET Name = '{checkedName}',
-                 TypeId = '{checkedTypeId}'
+                 TypeId = {checkedTypeId}
              WHERE ({id} == Id)
              """;
 
@@ -124,7 +130,7 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         command.Connection = Connection;
         command.CommandText =
             $"""
-             UPDATE table_addresses
+             UPDATE table_individuals
              SET IsDeleted = 1
              WHERE ({id} == Id)
              """;
@@ -142,7 +148,7 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         command.Connection = Connection;
         command.CommandText =
             $"""
-             UPDATE table_addresses
+             UPDATE table_individuals
              SET IsDeleted = 0
              WHERE ({id} == Id)
              """;

@@ -1,11 +1,13 @@
 ﻿namespace ConsoleAppWithAddressDatabase.Entities;
 
-public record Address(
-    int? Id,
-    string Region,
-    string Locality,
-    string PlanningElement,
-    string Street,
-    string Building,
-    string Room,
-    int IndividualId);
+public record Address()
+{
+    public int? Id { get; set; }
+    public string? Region { get; set; }
+    public string? Locality { get; set; }
+    public string? PlanningElement { get; set; }
+    public string? Street { get; set; }
+    public string? Building { get; set; }
+    public string? Room { get; set; }
+    public int? IndividualId { get; set; }
+}

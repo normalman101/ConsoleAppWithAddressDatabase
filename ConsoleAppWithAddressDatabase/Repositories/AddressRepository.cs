@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Data;
+using ConsoleAppWithAddressDatabase.Builders;
 using ConsoleAppWithAddressDatabase.Entities;
+using ConsoleAppWithAddressDatabase.Extensions;
 using Microsoft.Data.Sqlite;
 
 namespace ConsoleAppWithAddressDatabase.Repositories;
@@ -41,38 +43,45 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
         Connection.Close();
     }
 
-    public Address? GetById(int id)
+    public List<Address> GetByCriteria<TV>(TV value, string columnName)
     {
+        var addresses = new List<Address>();
         var command = new SqliteCommand();
         command.Connection = Connection;
         command.CommandText =
             $"""
              SELECT *
              FROM table_addresses
-             WHERE ({id} == Id)
+             WHERE '{value}' == (CAST ({columnName} AS TEXT))
              """;
-
+        
         Connection.Open();
 
         var data = command.ExecuteReader();
 
-        if (!data.HasRows) throw new Exception("Адресс не найден");
+        if (!data.HasRows) return addresses;
 
-        data.Read();
-        
-        var address = new Address(
-            data.GetInt32("Id"),
-            data.GetString("Region"),
-            data.GetString("Locality"),
-            data.GetString("PlanningElement"),
-            data.GetString("Street"),
-            data.GetString("Building"),
-            data.GetString("Room"),
-            data.GetInt32("IndividualId"));
+        while (data.Read())
+        {
+            var addressBuilder = new AddressBuilder();
+
+            addressBuilder
+                .SetId(data.GetInt32("Id"))
+                .SetRegion(data.GetString("Region"))
+                .SetLocality(data.GetString("Locality"))
+                .SetPlanningElement(data.GetString("PlanningElement"))
+                .SetStreet(data.GetString("Street"))
+                .SetBuilding(data.GetString("Building"))
+                .SetRoom(data.GetString("Room"))
+                .SetIndividualId(data.GetInt32("IndividualId"));
+
+            addresses.Add(addressBuilder.Address);
+            addressBuilder.Reset();
+        }
 
         Connection.Close();
 
-        return address;
+        return addresses;
     }
 
     public List<Address> GetAll()
@@ -94,17 +103,20 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
 
         while (data.Read())
         {
-            var address = new Address(
-                data.GetInt32(0),
-                data.GetString(1),
-                data.GetString(2),
-                data.GetString(3),
-                data.GetString(4),
-                data.GetString(5),
-                data.GetString(6),
-                data.GetInt32(7));
+            var addressBuilder = new AddressBuilder();
 
-            addresses.Add(address);
+            addressBuilder
+                .SetId(data.GetInt32("Id"))
+                .SetRegion(data.GetString("Region"))
+                .SetLocality(data.GetString("Locality"))
+                .SetPlanningElement(data.GetString("PlanningElement"))
+                .SetStreet(data.GetString("Street"))
+                .SetBuilding(data.GetString("Building"))
+                .SetRoom(data.GetString("Room"))
+                .SetIndividualId(data.GetInt32("IndividualId"));
+
+            addresses.Add(addressBuilder.Address);
+            addressBuilder.Reset();
         }
 
         Connection.Close();
@@ -114,15 +126,18 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
 
     public void Update(int id, Address newData)
     {
-        var existingAddress = GetById(id);
-        
-        var checkedRegion = newData.Region.IsEmpty() ? existingAddress.Region : newData.Region;
-        var checkedLocality = newData.Locality.IsEmpty() ? existingAddress.Locality : newData.Locality;
+        var existingAddress = GetByCriteria(id, "Id")[0];
+
+        var checkedRegion = newData.Region.IsEmptyOrNull() ? existingAddress.Region : newData.Region;
+        var checkedLocality = newData.Locality.IsEmptyOrNull() ? existingAddress.Locality : newData.Locality;
         var checkedPlanningElement =
-            newData.PlanningElement.IsEmpty() ? existingAddress.PlanningElement : newData.PlanningElement;
-        var checkedStreet = newData.Street.IsEmpty() ? existingAddress.Street : newData.Street;
-        var checkedBuilding = newData.Building.IsEmpty() ? existingAddress.Building : newData.Building;
-        var checkedRoom = newData.Room.IsEmpty() ? existingAddress.Room : newData.Room;
+            newData.PlanningElement.IsEmptyOrNull() ? existingAddress.PlanningElement : newData.PlanningElement;
+        var checkedStreet = newData.Street.IsEmptyOrNull() ? existingAddress.Street : newData.Street;
+        var checkedBuilding = newData.Building.IsEmptyOrNull() ? existingAddress.Building : newData.Building;
+        var checkedRoom = newData.Room.IsEmptyOrNull() ? existingAddress.Room : newData.Room;
+        var checkedIndividualId = newData.IndividualId == existingAddress.IndividualId
+            ? existingAddress.IndividualId
+            : newData.IndividualId;
 
         var command = new SqliteCommand();
         command.Connection = Connection;
@@ -134,7 +149,8 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
                  PlanningElement = '{checkedPlanningElement}',
                  Street = '{checkedStreet}',
                  Building = '{checkedBuilding}',
-                 Room = '{checkedRoom}'
+                 Room = '{checkedRoom}',
+                 IndividualId = {checkedIndividualId}
              WHERE ({id} == Id)
              """;
 
@@ -181,13 +197,13 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
         Connection.Close();
     }
 
-    public bool HasEmptyValues(Address data)
+    private static bool HasEmptyValues(Address? data)
     {
-        return data.Region.IsEmpty()
-               && data.Locality.IsEmpty()
-               && data.PlanningElement.IsEmpty()
-               && data.Street.IsEmpty()
-               && data.Building.IsEmpty()
-               && data.Room.IsEmpty();
+        return !(data.Region.IsEmptyOrNull()
+               && data.Locality.IsEmptyOrNull()
+               && data.PlanningElement.IsEmptyOrNull()
+               && data.Street.IsEmptyOrNull()
+               && data.Building.IsEmptyOrNull()
+               && data.Room.IsEmptyOrNull());
     }
 }
