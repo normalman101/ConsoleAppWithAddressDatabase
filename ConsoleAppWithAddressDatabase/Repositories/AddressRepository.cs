@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using ConsoleAppWithAddressDatabase.Entities;
 using Microsoft.Data.Sqlite;
 
@@ -40,7 +41,7 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
         Connection.Close();
     }
 
-    public Address GetById(int id)
+    public Address? GetById(int id)
     {
         var command = new SqliteCommand();
         command.Connection = Connection;
@@ -57,15 +58,17 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
 
         if (!data.HasRows) throw new Exception("Адресс не найден");
 
+        data.Read();
+        
         var address = new Address(
-            data.GetInt32(0),
-            data.GetString(1),
-            data.GetString(2),
-            data.GetString(3),
-            data.GetString(4),
-            data.GetString(5),
-            data.GetString(6),
-            data.GetInt32(7));
+            data.GetInt32("Id"),
+            data.GetString("Region"),
+            data.GetString("Locality"),
+            data.GetString("PlanningElement"),
+            data.GetString("Street"),
+            data.GetString("Building"),
+            data.GetString("Room"),
+            data.GetInt32("IndividualId"));
 
         Connection.Close();
 
@@ -180,13 +183,11 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
 
     public bool HasEmptyValues(Address data)
     {
-        if (data.Region.IsEmpty()
-            || data.Locality.IsEmpty()
-            || data.PlanningElement.IsEmpty()
-            || data.Street.IsEmpty()
-            || data.Building.IsEmpty()
-            || data.Room.IsEmpty()) return false;
-        // TODO: Реализовать проверку существующего лица по идентификатору
-        return true;
+        return data.Region.IsEmpty()
+               && data.Locality.IsEmpty()
+               && data.PlanningElement.IsEmpty()
+               && data.Street.IsEmpty()
+               && data.Building.IsEmpty()
+               && data.Room.IsEmpty();
     }
 }

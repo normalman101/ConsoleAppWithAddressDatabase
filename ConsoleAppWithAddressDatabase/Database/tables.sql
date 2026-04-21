@@ -14,6 +14,7 @@
 CREATE TABLE table_individuals (
     Id INTEGER PRIMARY KEY AUTOINCREMENT,
     Name TEXT NOT NULL,
+    IsDeleted INTEGER NOT NULL DEFAULT 0,
     TypeId INTEGER NOT NULL,
     FOREIGN KEY (TypeId) REFERENCES table_individual_types (Id)
 );

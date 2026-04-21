@@ -1,6 +1,6 @@
 ﻿namespace ConsoleAppWithAddressDatabase.Entities;
 
 public record Individual(
-    int Id,
+    int? Id,
     string Name,
     int TypeId);

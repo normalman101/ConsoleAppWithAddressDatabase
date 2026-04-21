@@ -1,5 +1,7 @@
 ﻿using System;
 using ConsoleAppWithAddressDatabase.Entities;
+using ConsoleAppWithAddressDatabase.Repositories;
+using Microsoft.Data.Sqlite;
 
 namespace ConsoleAppWithAddressDatabase;
 
@@ -9,13 +11,26 @@ public static partial class Program
     {
         const string connectionString =
             @"Data Source=C:\Projects\Rider\ConsoleAppWithAddressDatabase\ConsoleAppWithAddressDatabase\Database\addresses.sqlite";
-        var database = new AddressDatabase(connectionString);
-        
-        database.Add("Voronezh", "A", "B", "Ulitsa62g", "Building", "24", TODO);
-        var addresses = database.GetAll();
-        foreach (var address in addresses)
+        var addressDatabase = new AddressRepository
         {
-            Console.WriteLine($"{address.Region} {address.Locality}, {address.PlanningElement}, {address.Street}, {address.Building}, {address.Room}");
-        }
+            Connection = new SqliteConnection(connectionString)
+        };
+
+        var individualDatabase = new IndividualRepository
+        {
+            Connection = new SqliteConnection(connectionString)
+        };
+
+        var individual = new Individual(1, "Alice", 1);
+
+        individualDatabase.Add(individual);
+
+        var address = new Address(null, "TestA", "TestB", "TestC", "TestD", "TestE", "TestF", 1);
+        addressDatabase.Add(address);
+
+        var dbIndividual = individualDatabase.GetById(1);
+        
+        var dbAddress = addressDatabase.GetById(1);
+        Console.WriteLine($"{dbIndividual.Id} {dbIndividual.Name} {dbIndividual.TypeId}");
     }
 }

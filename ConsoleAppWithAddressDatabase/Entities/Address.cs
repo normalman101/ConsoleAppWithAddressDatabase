@@ -1,7 +1,7 @@
 ﻿namespace ConsoleAppWithAddressDatabase.Entities;
 
 public record Address(
-    int Id,
+    int? Id,
     string Region,
     string Locality,
     string PlanningElement,
