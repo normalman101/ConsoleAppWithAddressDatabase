@@ -1,14 +1,8 @@
-﻿CREATE TABLE table_individual_types (
-                                        Id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        Type TEXT NOT NULL
-);
-
-CREATE TABLE table_individuals (
+﻿CREATE TABLE table_persons (
                                    Id INTEGER PRIMARY KEY AUTOINCREMENT,
                                    Name TEXT NOT NULL,
                                    IsDeleted INTEGER NOT NULL DEFAULT 0,
-                                   TypeId INTEGER NOT NULL,
-                                   FOREIGN KEY (TypeId) REFERENCES table_individual_types (Id)
+                                   Type INTEGER NOT NULL CHECK ( Type == 0 or Type == 1)
 );
 
 CREATE TABLE table_addresses (
@@ -20,10 +14,6 @@ CREATE TABLE table_addresses (
     Building TEXT NOT NULL,
     Room TEXT NOT NULL,
     IsDeleted INTEGER NOT NULL DEFAULT 0,
-    IndividualId INTEGER NOT NULL,
-    FOREIGN KEY (IndividualId) REFERENCES table_individuals (Id)
+    PersonId INTEGER NOT NULL,
+    FOREIGN KEY (PersonId) REFERENCES table_persons (Id)
 );
-
-INSERT INTO table_individual_types (Type)
-VALUES ('Legal'),
-       ('Individual')

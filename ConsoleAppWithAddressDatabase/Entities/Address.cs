@@ -9,5 +9,5 @@ public record Address()
     public string? Street { get; set; }
     public string? Building { get; set; }
     public string? Room { get; set; }
-    public int? IndividualId { get; set; }
+    public int? PersonId { get; set; }
 }

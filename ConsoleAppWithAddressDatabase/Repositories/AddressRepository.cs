@@ -26,14 +26,14 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
                                          Street,
                                          Building,
                                          Room,
-                                         IndividualId)
+                                         PersonId)
              VALUES ('{data.Region}',
                      '{data.Locality}',
                      '{data.PlanningElement}',
                      '{data.Street}',
                      '{data.Building}',
                      '{data.Room}',
-                     '{data.IndividualId}')
+                     '{data.PersonId}')
              """;
 
         Connection.Open();
@@ -54,7 +54,7 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
              FROM table_addresses
              WHERE '{value}' == (CAST ({columnName} AS TEXT))
              """;
-        
+
         Connection.Open();
 
         var data = command.ExecuteReader();
@@ -73,7 +73,7 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
                 .SetStreet(data.GetString("Street"))
                 .SetBuilding(data.GetString("Building"))
                 .SetRoom(data.GetString("Room"))
-                .SetIndividualId(data.GetInt32("IndividualId"));
+                .SetPersonId(data.GetInt32("PersonId"));
 
             addresses.Add(addressBuilder.Address);
             addressBuilder.Reset();
@@ -113,7 +113,7 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
                 .SetStreet(data.GetString("Street"))
                 .SetBuilding(data.GetString("Building"))
                 .SetRoom(data.GetString("Room"))
-                .SetIndividualId(data.GetInt32("IndividualId"));
+                .SetPersonId(data.GetInt32("PersonId"));
 
             addresses.Add(addressBuilder.Address);
             addressBuilder.Reset();
@@ -135,9 +135,8 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
         var checkedStreet = newData.Street.IsEmptyOrNull() ? existingAddress.Street : newData.Street;
         var checkedBuilding = newData.Building.IsEmptyOrNull() ? existingAddress.Building : newData.Building;
         var checkedRoom = newData.Room.IsEmptyOrNull() ? existingAddress.Room : newData.Room;
-        var checkedIndividualId = newData.IndividualId == existingAddress.IndividualId
-            ? existingAddress.IndividualId
-            : newData.IndividualId;
+        var checkedPersonId =
+            newData.PersonId == existingAddress.PersonId ? existingAddress.PersonId : newData.PersonId;
 
         var command = new SqliteCommand();
         command.Connection = Connection;
@@ -150,7 +149,7 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
                  Street = '{checkedStreet}',
                  Building = '{checkedBuilding}',
                  Room = '{checkedRoom}',
-                 IndividualId = {checkedIndividualId}
+                 PersonId = {checkedPersonId}
              WHERE ({id} == Id)
              """;
 
@@ -200,10 +199,10 @@ public class AddressRepository : IRepository<Address>, IDatabaseConnectable
     private static bool HasEmptyValues(Address? data)
     {
         return !(data.Region.IsEmptyOrNull()
-               && data.Locality.IsEmptyOrNull()
-               && data.PlanningElement.IsEmptyOrNull()
-               && data.Street.IsEmptyOrNull()
-               && data.Building.IsEmptyOrNull()
-               && data.Room.IsEmptyOrNull());
+                 && data.Locality.IsEmptyOrNull()
+                 && data.PlanningElement.IsEmptyOrNull()
+                 && data.Street.IsEmptyOrNull()
+                 && data.Building.IsEmptyOrNull()
+                 && data.Room.IsEmptyOrNull());
     }
 }

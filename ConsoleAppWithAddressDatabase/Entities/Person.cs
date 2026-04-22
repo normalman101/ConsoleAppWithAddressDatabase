@@ -1,8 +1,8 @@
 ﻿namespace ConsoleAppWithAddressDatabase.Entities;
 
-public record Individual()
+public record Person()
 {
     public int? Id { get; set; }
     public string? Name { get; set; }
-    public int? TypeId { get; set; }
+    public int? Type { get; set; }
 }

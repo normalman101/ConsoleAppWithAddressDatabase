@@ -8,11 +8,11 @@ using Microsoft.Data.Sqlite;
 
 namespace ConsoleAppWithAddressDatabase.Repositories;
 
-public class IndividualRepository : IRepository<Individual>, IDatabaseConnectable
+public class PersonRepository : IRepository<Person>, IDatabaseConnectable
 {
     public required SqliteConnection Connection { get; init; }
 
-    public void Add(Individual data)
+    public void Add(Person data)
     {
         if (data.Name.IsEmptyOrNull()) throw new Exception("Лицо имеет незаполненное имя");
 
@@ -20,8 +20,8 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         command.Connection = Connection;
         command.CommandText =
             $"""
-             INSERT INTO table_individuals(Name, TypeId)
-             VALUES ('{data.Name}', {data.TypeId})
+             INSERT INTO table_persons(Name, Type)
+             VALUES ('{data.Name}', {data.Type})
              """;
 
         Connection.Open();
@@ -31,15 +31,15 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         Connection.Close();
     }
 
-    public List<Individual> GetByCriteria<TV>(TV value, string columnName)
+    public List<Person> GetByCriteria<TV>(TV value, string columnName)
     {
-        var individuals = new List<Individual>();
+        var individuals = new List<Person>();
         var command = new SqliteCommand();
         command.Connection = Connection;
         command.CommandText =
             $"""
              SELECT *
-             FROM table_individuals
+             FROM table_persons
              WHERE '{value}' == (CAST ({columnName} AS TEXT))
              """;
 
@@ -51,13 +51,13 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
 
         while (data.Read())
         {
-            var individualBuilder = new IndividualBuilder();
+            var individualBuilder = new PersonBuilder();
 
             individualBuilder.SetId(data.GetInt32("Id"))
                 .SetName(data.GetString("Name"))
-                .SetTypeId(data.GetInt32("TypeId"));
+                .SetType(data.GetInt32("Type"));
             
-            individuals.Add(individualBuilder.Individual);
+            individuals.Add(individualBuilder.Person);
             individualBuilder.Reset();
         }
 
@@ -66,15 +66,15 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         return individuals;
     }
 
-    public List<Individual> GetAll()
+    public List<Person> GetAll()
     {
-        var individuals = new List<Individual>();
+        var individuals = new List<Person>();
         var command = new SqliteCommand();
         command.Connection = Connection;
         command.CommandText =
             $"""
              SELECT *
-             FROM table_individuals
+             FROM table_persons
              """;
 
         Connection.Open();
@@ -85,13 +85,13 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
 
         while (data.Read())
         {
-            var individualBuilder = new IndividualBuilder();
+            var individualBuilder = new PersonBuilder();
 
             individualBuilder.SetId(data.GetInt32("Id"))
                 .SetName(data.GetString("Name"))
-                .SetTypeId(data.GetInt32("TypeId"));
+                .SetType(data.GetInt32("Type"));
             
-            individuals.Add(individualBuilder.Individual);
+            individuals.Add(individualBuilder.Person);
             individualBuilder.Reset();
         }
 
@@ -100,20 +100,20 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         return individuals;
     }
 
-    public void Update(int id, Individual newData)
+    public void Update(int id, Person newData)
     {
         var existingIndividual = GetByCriteria(id, "Id");
 
         var checkedName = newData.Name.IsEmptyOrNull() ? existingIndividual[0].Name : newData.Name;
-        var checkedTypeId = newData.TypeId is 1 or 2 ? newData.TypeId : existingIndividual[0].TypeId;
+        var checkedType = newData.Type is 0 or 1 ? newData.Type : existingIndividual[0].Type;
 
         var command = new SqliteCommand();
         command.Connection = Connection;
         command.CommandText =
             $"""
-             UPDATE table_individuals
+             UPDATE table_persons
              SET Name = '{checkedName}',
-                 TypeId = {checkedTypeId}
+                 Type = {checkedType}
              WHERE ({id} == Id)
              """;
 
@@ -130,7 +130,7 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         command.Connection = Connection;
         command.CommandText =
             $"""
-             UPDATE table_individuals
+             UPDATE table_persons
              SET IsDeleted = 1
              WHERE ({id} == Id)
              """;
@@ -148,7 +148,7 @@ public class IndividualRepository : IRepository<Individual>, IDatabaseConnectabl
         command.Connection = Connection;
         command.CommandText =
             $"""
-             UPDATE table_individuals
+             UPDATE table_persons
              SET IsDeleted = 0
              WHERE ({id} == Id)
              """;

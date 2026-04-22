@@ -53,9 +53,9 @@ public class AddressBuilder : IBuilder<AddressBuilder>
         return this;
     }
 
-    public AddressBuilder SetIndividualId(int individualId)
+    public AddressBuilder SetPersonId(int personId)
     {
-        Address.IndividualId = individualId;
+        Address.PersonId = personId;
         return this;
     }
 }
